@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đèn Kéo Quân 3D - Trung Thu Việt Nam</title>
+  <style>
+    :root {
+      --gold: #f39c12;
+      --bright-gold: #f1c40f;
+      --lantern-red: #c0392b;
+      --dark-red: #781005;
+      --glow-orange: #ff7700;
+      --bg-dark: #0a0612;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 30%, #2c123b 0%, #0a0612 70%);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Background Canvas for Particles */
+    #bg-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      z-index: 10;
+      text-align: center;
+      padding: 20px 10px 10px;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      color: var(--bright-gold);
+      text-shadow: 0 0 10px rgba(241, 196, 15, 0.6), 0 0 20px rgba(192, 57, 43, 0.8);
+      letter-spacing: 2px;
+      margin-bottom: 5px;
+    }
+
+    p.subtitle {
+      font-size: 0.95rem;
+      color: #d1ccc0;
+      opacity: 0.9;
+    }
+
+    /* 3D Scene Container */
+    .scene-container {
+      width: 100%;
+      height: 480px;
+      perspective: 1200px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 5;
+      position: relative;
+    }
+
+    /* Moon in Background */
+    .moon {
+      position: absolute;
+      top: 20px;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, #fffde7 0%, #fff59d 50%, #fbc02d 100%);
+      border-radius: 50%;
+      box-shadow: 0 0 40px #fffde7, 0 0 80px rgba(251, 192, 45, 0.4);
+      opacity: 0.85;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    /* Lantern Assembly */
+    .lantern-wrapper {
+      position: relative;
+      width: 260px;
+      height: 380px;
+      transform-style: preserve-3d;
+      z-index: 6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Hanging String */
+    .hanging-wire {
+      position: absolute;
+      top: -120px;
+      width: 2px;
+      height: 120px;
+      background: linear-gradient(to bottom, transparent, var(--gold));
+      z-index: 10;
+    }
+
+    /* Roof Structure */
+    .lantern-roof {
+      position: absolute;
+      top: 0;
+      width: 290px;
+      height: 45px;
+      background: linear-gradient(135deg, var(--lantern-red), var(--dark-red));
+      border: 2px solid var(--gold);
+      border-radius: 8px 8px 0 0;
+      box-shadow: 0 0 15px rgba(243, 156, 18, 0.4);
+      transform-style: preserve-3d;
+      z-index: 8;
+    }
+
+    .lantern-roof::before {
+      content: '';
+      position: absolute;
+      top: -18px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 20px solid var(--gold);
+    }
+
+    /* Bottom Ring Structure */
+    .lantern-bottom {
+      position: absolute;
+      bottom: 0;
+      width: 290px;
+      height: 35px;
+      background: linear-gradient(135deg, var(--dark-red), var(--lantern-red));
+      border: 2px solid var(--gold);
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 0 15px rgba(243, 156, 18, 0.4);
+      z-index: 8;
+    }
+
+    /* Tassels */
+    .tassel {
+      position: absolute;
+      bottom: -45px;
+      width: 6px;
+      height: 45px;
+      background: linear-gradient(to bottom, var(--gold), #e74c3c);
+      box-shadow: 0 0 5px var(--gold);
+    }
+
+    .tassel::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: -3px;
+      width: 12px;
+      height: 12px;
+      background: #e74c3c;
+      border-radius: 50%;
+    }
+
+    .tassel-1 { left: 15px; }
+    .tassel-2 { left: 80px; }
+    .tassel-3 { left: 50%; transform: translateX(-50%); }
+    .tassel-4 { right: 80px; }
+    .tassel-5 { right: 15px; }
+
+    /* Candle Core Lighting */
+    .candle-light {
+      position: absolute;
+      width: 40px;
+      height: 140px;
+      background: radial-gradient(ellipse at center, #ffffff 0%, #ffeb3b 30%, #ff9800 60%, transparent 80%);
+      border-radius: 50%;
+      filter: blur(8px);
+      animation: flicker 0.15s infinite alternate;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.8; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1.08); }
+    }
+
+    /* 3D Rotating Carousel */
+    .carousel {
+      width: 100%;
+      height: 280px;
+      position: absolute;
+      transform-style: preserve-3d;
+      transition: transform 0.1s linear;
+      cursor: pointer;
+    }
+
+    /* Lantern Faces (6 Sides - Hexagon) */
+    .face {
+      position: absolute;
+      width: 135px;
+      height: 270px;
+      left: 62.5px;
+      top: 5px;
+      background: rgba(255, 248, 220, 0.92);
+      border: 3px solid var(--gold);
+      border-radius: 6px;
+      box-shadow: 
+        inset 0 0 20px rgba(255, 152, 0, 0.6),
+        0 0 10px rgba(243, 156, 18, 0.3);
+      backface-visibility: visible;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px;
+      transition: filter 0.3s, transform 0.3s;
+    }
+
+    .face img {
+      width: 100%;
+      height: 210px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid rgba(243, 156, 18, 0.5);
+      filter: sepia(0.15) contrast(1.05);
+    }
+
+    .face-title {
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: var(--dark-red);
+      text-align: center;
+      margin-top: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Face positioning in 3D Space (N = 6, r = 117px) */
+    .face:nth-child(1) { transform: rotateY(0deg) translateZ(120px); }
+    .face:nth-child(2) { transform: rotateY(60deg) translateZ(120px); }
+    .face:nth-child(3) { transform: rotateY(120deg) translateZ(120px); }
+    .face:nth-child(4) { transform: rotateY(180deg) translateZ(120px); }
+    .face:nth-child(5) { transform: rotateY(240deg) translateZ(120px); }
+    .face:nth-child(6) { transform: rotateY(300deg) translateZ(120px); }
+
+    /* Active Highlight on Hover */
+    .carousel.paused .face:hover {
+      filter: brightness(1.25);
+      border-color: #fff;
+      box-shadow: 
+        0 0 25px var(--bright-gold),
+        inset 0 0 25px rgba(255, 235, 59, 0.8);
+    }
+
+    /* Status Banner */
+    .status-badge {
+      position: absolute;
+      bottom: -30px;
+      background: rgba(192, 57, 43, 0.85);
+      border: 1px solid var(--gold);
+      padding: 4px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--bright-gold);
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      transition: all 0.3s;
+      z-index: 10;
+    }
+
+    /* Controls Panel */
+    .controls-card {
+      z-index: 10;
+      background: rgba(20, 10, 30, 0.75);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(243, 156, 18, 0.4);
+      padding: 15px 25px;
+      border-radius: 15px;
+      margin: 10px 15px 25px;
+      max-width: 600px;
+      width: calc(100% - 30px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: space-around;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.9rem;
+    }
+
+    .control-group label {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      accent-color: var(--bright-gold);
+      cursor: pointer;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--lantern-red), var(--dark-red));
+      color: #fff;
+      border: 1px solid var(--gold);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+    }
+
+    .btn:hover {
+      background: var(--bright-gold);
+      color: var(--dark-red);
+      box-shadow: 0 0 10px var(--bright-gold);
+    }
+
+    /* Responsive scaling */
+    @media (max-width: 480px) {
+      h1 { font-size: 1.6rem; }
+      .scene-container { height: 400px; }
+      .lantern-wrapper { transform: scale(0.85); }
+      .controls-card { flex-direction: column; gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <header>
+    <h1>ĐÈN KÉO QUÂN TRUNG THU</h1>
+    <p class="subtitle">Rê chuột vào hình ảnh để dừng đèn và ngắm chi tiết</p>
+  </header>
+
+  <main class="scene-container">
+    <div class="moon"></div>
+
+    <div class="lantern-wrapper">
+      <div class="hanging-wire"></div>
+
+      <!-- Mái Đèn -->
+      <div class="lantern-roof"></div>
+
+      <!-- Ánh Nến Lung Linh Inside -->
+      <div class="candle-light"></div>
+
+      <!-- Khung Xoay 6 Mặt -->
+      <div class="carousel" id="lanternCarousel">
+        <div class="face">
+          <img src="https://carnivalwiz.com.sg/wp-content/uploads/2023/10/DIY-Lantern-in-Singapore-1030x1030.jpg" alt="Rước Đèn">
+          <span class="face-title">Rước Đèn</span>
+        </div>
+        <div class="face">
+          <img src="https://png.pngtree.com/png-clipart/20230503/original/pngtree-moon-full-moon-mid-autumn-festival-png-image_9135535.png" alt="Thỏ Ngắm Trăng">
+          <span class="face-title">Thỏ Ngắm Trăng</span>
+        </div>
+        <div class="face">
+          <img src="https://png.pngtree.com/png-clipart/20220301/original/pngtree-the-mid-autumn-festival-is-a-family-reunion-the-family-eats-png-image_7347722.png" alt="Phá Cỗ Đoàn Viên">
+          <span class="face-title">Đoàn Viên</span>
+        </div>
+        <div class="face">
+          <img src="https://static.vecteezy.com/system/resources/previews/003/297/335/non_2x/children-celebrating-mid-autumn-festival-with-mooncake-and-lanterns-free-vector.jpg" alt="Hội Đêm Rằm">
+          <span class="face-title">Đêm Rằm</span>
+        </div>
+        <div class="face">
+          <img src="https://png.pngtree.com/png-vector/20260531/ourlarge/pngtree-unique-mid-autumn-lion-dance-experience-png-image_19409386.webp" alt="Múa Lân">
+          <span class="face-title">Múa Lân</span>
+        </div>
+        <div class="face">
+          <img src="https://static.vecteezy.com/system/resources/previews/028/887/787/non_2x/traditional-vietnamese-star-lantern-illustration-den-ong-sao-mid-autumn-festival-concept-handmade-paper-craft-star-lights-vector.jpg" alt="Đèn Ông Sao">
+          <span class="face-title">Đèn Ông Sao</span>
+        </div>
+      </div>
+
+      <!-- Đế Đèn & Tua Rua -->
+      <div class="lantern-bottom">
+        <div class="tassel tassel-1"></div>
+        <div class="tassel tassel-2"></div>
+        <div class="tassel tassel-3"></div>
+        <div class="tassel tassel-4"></div>
+        <div class="tassel tassel-5"></div>
+      </div>
+
+      <!-- Trạng Thái Xoay -->
+      <div class="status-badge" id="statusBadge">Đèn đang quay...</div>
+    </div>
+  </main>
+
+  <!-- Thanh Điều Khiển -->
+  <div class="controls-card">
+    <div class="control-group">
+      <label for="speedRange">Tốc độ:</label>
+      <input type="range" id="speedRange" min="1" max="10" value="3">
+    </div>
+
+    <button class="btn" id="directionBtn">
+      🔄 Đảo Chiều
+    </button>
+
+    <button class="btn" id="audioBtn">
+      🎵 Nhạc Dân Gian
+    </button>
+  </div>
+
+  <script>
+    // --- JavaScript Điều Khiển Đèn Kéo Quân ---
+    const carousel = document.getElementById('lanternCarousel');
+    const statusBadge = document.getElementById('statusBadge');
+    const speedRange = document.getElementById('speedRange');
+    const directionBtn = document.getElementById('directionBtn');
+    const audioBtn = document.getElementById('audioBtn');
+
+    let currentAngle = 0;
+    let isPaused = false;
+    let speed = 0.6; // Góc quay mỗi frame
+    let direction = 1; // 1: Thuận chiều, -1: Ngược chiều
+    let animationFrameId;
+
+    // Vòng Lặp Quay Đèn Kéo Quân
+    function rotateLantern() {
+      if (!isPaused) {
+        currentAngle += speed * direction;
+        carousel.style.transform = `rotateY(${currentAngle}deg)`;
+      }
+      animationFrameId = requestAnimationFrame(rotateLantern);
+    }
+
+    // Bắt Đầu Xoay
+    rotateLantern();
+
+    // Sự Kiện Rê Chuột Vào Đèn -> DỪNG QUAY
+    carousel.addEventListener('mouseenter', () => {
+      isPaused = true;
+      carousel.classList.add('paused');
+      statusBadge.textContent = '⏸️ Đã dừng (Đang ngắm ảnh)';
+      statusBadge.style.background = 'rgba(241, 196, 15, 0.9)';
+      statusBadge.style.color = '#781005';
+    });
+
+    // Sự Kiện Rê Chuột Ra Khỏi Đèn -> TÍẾP TỤC QUAY
+    carousel.addEventListener('mouseleave', () => {
+      isPaused = false;
+      carousel.classList.remove('paused');
+      statusBadge.textContent = 'Đèn đang quay...';
+      statusBadge.style.background = 'rgba(192, 57, 43, 0.85)';
+      statusBadge.style.color = '#f1c40f';
+    });
+
+    // Chỉnh Tốc Độ Quay
+    speedRange.addEventListener('input', (e) => {
+      speed = parseFloat(e.target.value) * 0.2;
+    });
+
+    // Đảo Chiều Quay
+    directionBtn.addEventListener('click', () => {
+      direction *= -1;
+    });
+
+    // --- Phát Âm Thanh Dân Gian Bằng Web Audio API ---
+    let audioCtx = null;
+    let isPlayingAudio = false;
+    let audioTimer = null;
+
+    const notes = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25]; // Thang âm ngũ cung C-D-E-G-A-C
+
+    function playPentatonicNote() {
+      if (!isPlayingAudio || !audioCtx) return;
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      const note = notes[Math.floor(Math.random() * notes.length)];
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(note, audioCtx.currentTime);
+      
+      gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.2);
+    }
+
+    audioBtn.addEventListener('click', () => {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      
+      if (isPlayingAudio) {
+        isPlayingAudio = false;
+        clearInterval(audioTimer);
+        audioBtn.textContent = '🎵 Nhạc Dân Gian';
+        audioBtn.style.background = '';
+      } else {
+        isPlayingAudio = true;
+        audioCtx.resume();
+        audioTimer = setInterval(playPentatonicNote, 400);
+        audioBtn.textContent = '🔊 Tắt Nhạc';
+        audioBtn.style.background = 'var(--bright-gold)';
+        audioBtn.style.color = 'var(--dark-red)';
+      }
+    });
+
+    // --- Hiệu Ứng Đom Đốm / Đốm Sáng Đêm Rằm ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const particles = Array.from({ length: 45 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      size: Math.random() * 3 + 1,
+      speedX: (Math.random() - 0.5) * 0.5,
+      speedY: -Math.random() * 0.8 - 0.2,
+      alpha: Math.random()
+    }));
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(p => {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        p.alpha += (Math.random() - 0.5) * 0.02;
+        
+        if (p.alpha < 0.1) p.alpha = 0.1;
+        if (p.alpha > 0.9) p.alpha = 0.9;
+        
+        if (p.y < 0) {
+          p.y = canvas.height;
+          p.x = Math.random() * canvas.width;
+        }
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(241, 196, 15, ${p.alpha})`;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#f39c12';
+        ctx.fill();
+      });
+
+      requestAnimationFrame(drawParticles);
+    }
+
+    drawParticles();
+  </script>
+</body>
+</html>
